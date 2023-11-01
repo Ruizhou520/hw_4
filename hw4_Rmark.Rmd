@@ -1,0 +1,233 @@
+---
+title: "hw4_Rmark"
+author: "Ruizhou Peng"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+load package
+
+```{r}
+library(tidyverse)
+```
+
+### 1. probablility theory
+
+#### 1.1 rules of probability
+
+q1: $\mathbb{P}(\{a,b\}) = 0.6, \mathbb{p}(\{b,c\})=0.5\\ so \quad\mathbb{P}(\{c\}) = 0.4,\mathbb{P}(\{a\}) = 0.5, \mathbb{P}(\{b\}) = 0.1$
+
+q2: proof
+
+rule1: $q\in[0,1], so \space \mathbb{P}\ge 0$
+
+rule2: $\Omega = \{0,1\} \quad and \quad \mathbb{P}(\{0,1\})=1 \quad so \space \mathbb{P}(\Omega)=1$
+
+rule3: \{$\emptyset$\}, \{0\},\{1\} are pairwise disjoint and it's clear that $\mathbb{P}(\cup_{i=1}^4A_i) = \sum_{i=1}^4 \mathbb{P}(A_i)$
+
+#### 1.2 deriving new properties from the rules of probability
+
+q1: union of a finite sequence of disjoint events
+
+proof:
+
+for a finite disjoint sequence A1 to An, for any two events, it has $A_i \cap A_j = \emptyset, \space \mathbb{P}(A_i \cup A_j) = \mathbb{P}(A_i) + \mathbb{P}(A_j) - \mathbb{P}(A_i \cap A_j)$, since $\mathbb{P}(\emptyset) = 0$, so for disjoint events, it has property $\mathbb{P}(A_i \cup A_j)= \mathbb{P}(A_i) + \mathbb{P}(A_j)$. Besides, $A_k \cap (A_i\cup A_j) = \emptyset \quad \mathbb{P}(A_i \cup A_j \cup A_k)= \mathbb{P}(A_i) + \mathbb{P}(A_j) + \mathbb{P}(A_k)$, therefore, $\mathbb{P}(\cup_{i=1}^nA_i)= \sum_{i=1}^n \mathbb{P}(A_i)$
+
+q2: probability of a complement
+
+proof:
+
+for $S \subset \Omega$, $S \cap S^c = \emptyset, S\cup S^c = \Omega$, so S and S^c^ are pairwise disjoint. $\mathbb{P}(S\cup S^c)=\mathbb{P}(\Omega)=1=\mathbb{P}(S)+\mathbb{P}(S^c)$
+so $\mathbb{P}(S^c) = 1-\mathbb{P}(S)$
+
+q3: the union bound
+
+example: 
+
+sample space {a,b,c}
+
+event {(a,b), (a,c)}
+
+p(a) = 0.4, p(b) = 0.1, p(c) = 0.5. S1==>(a,b), S2==>(a,c) $\mathbb{P}(S_1)=0.5, \mathbb{P}(S_2)=0.9$
+$\mathbb{P}(\cup_{i=1}^{\infty}S_i) \neq \sum_{i=1}^{\infty}\mathbb{P}(S_i)$
+
+q4:
+
+proof:
+
+for any $x_i \in A \space \& \space x_i\in B$, P(A) + P(B) count $\sum_i\mathbb{P}(x_i)$ twice. $\sum_i\mathbb{P}(x_i)=\mathbb{P}(A\cap B)$, so have to minus one $\mathbb{P}(A\cap B)$
+
+### 2. finite probability spaces
+
+#### 2.1 sampling with replacement
+
+3 red and 7 blue spheres, draw with replacement
+
+q1: write down a mathematical expression for the probability that z out of the 22 selections were red
+
+$p={{22}\choose{7}}*0.3^{7}*0.7^{15}$
+
+q2: write a function **prob_red_spheres** takes z as input and compute the probability out of a total 22
+
+```{r}
+prob_red_spheres <- function(z){
+  # z --> the times that draw a red ball
+  p <- choose(22,z)*(0.3^z)*(0.7^(22-z))
+  return(p)
+}
+
+prob_red_spheres(10)
+```
+
+q3: create a frame with 2 columns, one for num_reds and one for prob
+
+```{r}
+num_reds <- seq(1,22)
+prob <- unlist(map(num_reds, prob_red_spheres))
+
+prob_by_num_reds <- data.frame(num_reds, prob)
+
+prob_by_num_reds %>% head(3)
+```
+
+q4: display a plot of the probability as a function of the number of reds
+
+```{r}
+prob_by_num_reds %>%
+  ggplot(aes(num_reds, prob))+
+  geom_line()
+```
+
+q5: explore the **sample** within R, to run an experiment in which we sample with replacement from a collection of 10 objects and repeat 22 times
+
+```{r}
+sample(10,22, replace=TRUE)
+```
+
+can use **set.seed** for reproduction
+
+now use **sample** to simulate selecting z red balls from a bag of size 10, with 3 red balls and 7 blue balls, when sampling 22 times with replacement
+
+generate a data frame
+
+```{r}
+
+num_trials<-1000 # set the number of trials
+#set.seed(0) # set the random seed
+
+# generate collection of num_trials simulations
+# first column is number of trial
+# second column is the result of each trial
+# use "map" to map each trial to a list of outcomes
+sampling_with_replacement_simulation<-data.frame(trial=1:num_trials) %>%
+mutate(sample_balls = map(.x=trial, ~sample(10,22, replace = TRUE)))
+```
+
+now add a new column **num_reds** shows the number of red balls, assuming the three red balls are labelled by \{1,2,3\}
+
+```{r}
+# use "sum" to count the elements number which le 3
+sampling_with_replacement_simulation <- sampling_with_replacement_simulation %>%
+  mutate(num_reds= map_dbl(.x= sample_balls, ~sum(.x<=3)))
+```
+
+q6: now add a new column to **prob_by_num_reds** gives the probability of red balls using the number of times divided by the total number of trials (frequency)， 
+
+```{r}
+# first extract the num_reds in each trial
+reds_occ_times <- sampling_with_replacement_simulation$num_reds
+
+# calculate correspond frequency with num_reds in prob_by_num_reds
+
+prob_by_num_reds<-prob_by_num_reds%>%
+  mutate(predicted_prob= 
+           map_dbl(.x=num_reds,~sum(.x==reds_occ_times))/num_trials)
+```
+
+q7: create a plot comparing the results of simulation with probability formula according to frame **prob_by_num_reds**
+
+```{r}
+# first tidy frame since simulation and formula can be
+# seen as two different estimating methods
+prob_by_num_reds_tidy <- prob_by_num_reds%>%
+  pivot_longer(cols=!num_reds, names_to = "methods", values_to = "probability")
+
+# then use tidied version to visualize
+prob_by_num_reds_tidy%>%
+  ggplot(aes(x=num_reds, y=probability, color=methods, linetype=methods))+geom_point()+
+  geom_line()+scale_linetype_manual(values = c('solid','dashed'))+theme_bw()
+```
+
+#### 2.2 sampling without replacement
+
+suppose we have a large bag containing 100 spheres, 50 red, 30 blue and 20 green. suppose that we sample 10 spheres from the bag without replacement
+
+q1: what is the probability that one or more colors are missing from the selection? answer this question via a simulation study using ideas from the previous question
+
+```{r}
+# set a number for trials
+num_trials <- 10000
+
+# create a frame with two columns,one for num, one for simulation result
+prob_by_num <- data.frame(number=1:num_trials)%>%
+             mutate(result=map(.x=number, 
+                               ~sample(100,10, replace=FALSE)))
+
+# compute the number of each color in every trial
+# suppose green balls [1,20], red [21,70], blue [71,100]
+prob_by_num <- prob_by_num%>%
+  mutate(green=map_dbl(.x=result, ~sum(.x>=1 & .x <= 20)),
+         red=map_dbl(.x=result, ~sum(.x>=21 & .x <= 70)),
+         blue=map_dbl(.x=result, ~sum(.x>=71 & .x <= 100)))
+
+# use pmin to compute the minimum ball number appeared
+# pmin is compare several vectors' correspond element and 
+# return a new vector with each element is min
+prob_by_num <- prob_by_num %>% mutate(minimum=pmin(green, red, blue))
+
+# compute the proportion of rows which minimum number is zero
+proportion <- sum(prob_by_num$minimum==0)/num_trials
+```
+
+
+q2: derive a mathematical expression for the probability
+
+draw 10 balls without replacement equals draw at one time,to compute the probability of missing color, it has two possible result: missing one color or missing two
+
+first compute missing one color
+
+$\mathbb{P}_{red} = \frac{{50\choose{10}}}{{100\choose{10}}}$[subscript means missing]
+
+$\mathbb{P}_{green} = \frac{{80\choose{10}}}{{100\choose{10}}}$
+
+$\mathbb{P}_{blue} = \frac{{70\choose{10}}}{{100\choose{10}}}$
+
+then compute missing two colors
+
+$\mathbb{P}_{red} = \frac{{50\choose{10}}}{{100\choose{10}}}$[subscript means only having]
+
+$\mathbb{P}_{green} = \frac{{20\choose{10}}}{{100\choose{10}}}$
+
+$\mathbb{P}_{blue} = \frac{{30\choose{10}}}{{100\choose{10}}}$
+
+so the result is 
+
+$\mathbb{P} = \frac{{50\choose{10}}+{80\choose{10}}+{70\choose{10}}+{50\choose{10}}+{20\choose{10}}+{30\choose{10}}}{{100\choose{10}}}$
+
+```{r}
+# compute the result of formula
+
+prob_formula <- (choose(50,10)*2+choose(80,10)+choose(70,10)+choose(50,10)+choose(20,10)+choose(30,10))/choose(100,10)
+```
+
+use plot to visualize
+```{r}
+# there are difference between geom_bar and geom_col
+# bar shows the proportion to the number of cases
+# col shows the values in the data, in this case, it's result
+method <- c('prob_formula', 'proportion')
+result <- c(prob_formula, proportion)
+df<- data.frame(method, result)
+df%>%ggplot(aes(x=method,y=result, color=method, fill=method))+geom_col()
+```
+

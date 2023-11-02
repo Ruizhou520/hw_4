@@ -187,6 +187,8 @@ prob_by_num <- prob_by_num %>% mutate(minimum=pmin(green, red, blue))
 
 # compute the proportion of rows which minimum number is zero
 proportion <- sum(prob_by_num$minimum==0)/num_trials
+
+proportion
 ```
 
 
@@ -210,14 +212,18 @@ $\mathbb{P}_{green} = \frac{{20\choose{10}}}{{100\choose{10}}}$
 
 $\mathbb{P}_{blue} = \frac{{30\choose{10}}}{{100\choose{10}}}$
 
+attention! the formula of missing one color indicating the possible of missing two, so the add of probability of missing one count missing two colors twice, so we need to minus missing two.
+
 so the result is 
 
-$\mathbb{P} = \frac{{50\choose{10}}+{80\choose{10}}+{70\choose{10}}+{50\choose{10}}+{20\choose{10}}+{30\choose{10}}}{{100\choose{10}}}$
+$\mathbb{P} = \frac{{50\choose{10}}+{80\choose{10}}+{70\choose{10}}-{50\choose{10}}-{20\choose{10}}-{30\choose{10}}}{{100\choose{10}}}$
 
 ```{r}
 # compute the result of formula
 
-prob_formula <- (choose(50,10)*2+choose(80,10)+choose(70,10)+choose(50,10)+choose(20,10)+choose(30,10))/choose(100,10)
+prob_formula <- (choose(50,10)*2+choose(80,10)+choose(70,10)-choose(50,10)-choose(20,10)-choose(30,10))/choose(100,10)
+
+prob_formula
 ```
 
 use plot to visualize
